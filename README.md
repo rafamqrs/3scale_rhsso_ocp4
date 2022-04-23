@@ -1,4 +1,4 @@
-## Sample repo to install the 3scale and rhsso on Openshift 4
+## Sample repo to install the OCS/ODF, Red Hat 3Scale Api Management and Red Hat Single Sign-On on Openshift 4
 
 
 ### How to run
