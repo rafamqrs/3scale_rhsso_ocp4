@@ -1,0 +1,31 @@
+- name: Evaluate Machines are Running
+  shell: oc get machinesets -n openshift-machine-api -o=custom-columns=NAME:.metadata.name | tail -n +2
+  register: machinesets_list
+
+- debug: 
+    var: machinesets_list
+
+- name: Scale up to 2 replicas the Machines
+  shell: 'oc scale --replicas=2 machineset {{ item }} -n openshift-machine-api'
+  with_items: "{{ machinesets_list.stdout_lines }}"
+
+
+- name: Wait for machines to be ready
+  shell: "oc get machine -n openshift-machine-api -o json"
+  register: machines
+  until: machines.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 15
+  delay: 30
+
+
+- name: Create Openshift Storage Namespace
+  shell: oc new-project openshift-storage
+
+
+- name: List the last 3 Machines was created
+  shell: oc get machine -n openshift-machine-api -o=custom-columns=NAME:.metadata.name --sort-by='{.metadata.creationTimestamp}' --no-headers | tail -n 3 | tac
+  register: last_machines
+
+- name: Label Nodes
+  shell: "oc label nodes {{ item }} cluster.ocs.openshift.io/openshift-storage=''"
+  with_items: "{{ last_machines.stdout_lines }}"
