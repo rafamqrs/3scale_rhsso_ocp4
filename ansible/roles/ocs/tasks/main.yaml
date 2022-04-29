@@ -18,14 +18,46 @@
   delay: 30
 
 
-- name: Create Openshift Storage Namespace
-  shell: oc new-project openshift-storage
+- name: Verify if OCS is installed
+  shell: oc get csv -n openshift-storage -o name | grep ocs-operator
+  register: ocs_is_installed
+
+# - name: Deploy OCS on Openshift
+#   shell: oc apply -f roles/ocs/templates/deploy-with-olm.yaml.j2
+#   ignore_errors: True
+#   when: ocs_is_installed != ""
+
+- name: Deploy OCS on Openshift
+  k8s:
+    state: present
+    resource_definition: "{{ lookup('template', 'storagecluster.yaml.j2') }}"
 
 
 - name: List the last 3 Machines was created
-  shell: oc get machine -n openshift-machine-api -o=custom-columns=NAME:.metadata.name --sort-by='{.metadata.creationTimestamp}' --no-headers | tail -n 3 | tac
-  register: last_machines
+  shell: oc get nodes -n openshift-machine-api -o=custom-columns=NAME:.metadata.name --sort-by='{.metadata.creationTimestamp}' --no-headers | tail -n 3 | tac
+  register: list_last_3nodes
 
 - name: Label Nodes
-  shell: "oc label nodes {{ item }} cluster.ocs.openshift.io/openshift-storage=''"
-  with_items: "{{ last_machines.stdout_lines }}"
+  shell: "oc label nodes {{ item }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true"
+  with_items: "{{ list_last_3nodes.stdout_lines }}"
+
+
+- name: Create a StorageCluster
+  k8s:
+    state: present
+    resource_definition: "{{ lookup('template', 'storagecluster.yaml.j2') }}"
+
+- name: GET
+  shell: "oc get storageclusters.ocs.openshift.io -n openshift-storage -o=custom-columns=.STATUS:status.phase --no-headers"
+  register: aaa
+
+- debug: 
+    var: aaa.stdout
+
+
+- name: Wait until the StorageCluster be created
+  shell: "oc get storageclusters.ocs.openshift.io -n openshift-storage -o=custom-columns=.STATUS:status.phase --no-headers"
+  register: storage_cluster
+  until: storage_cluster.stdout == "Ready"
+  retries: 15
+  delay: 30    

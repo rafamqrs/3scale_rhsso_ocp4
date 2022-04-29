@@ -3,6 +3,8 @@
   vars:
       three_scale_project: "3scale-mw"
       insecure_skip_tls_verify: true
+      storage_class: gp2
+      storage_size: 512Gi
   tasks:
 
     - name: Define domain
