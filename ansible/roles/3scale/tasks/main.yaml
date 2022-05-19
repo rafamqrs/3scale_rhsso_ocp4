@@ -1,0 +1,8 @@
+- name: Create 3scale namespace
+  shell: 'oc new-project {{ three_scale_project }}'
+  ignore_errors: True
+
+- name: Deploy 3scale on Openshift
+  k8s:
+    state: present
+    resource_definition: "{{ lookup('template', '3scale-api-mgnt.yaml.j2') }}"

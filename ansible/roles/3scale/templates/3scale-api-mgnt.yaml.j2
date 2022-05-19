@@ -1,0 +1,22 @@
+apiVersion: apps.3scale.net/v1alpha1
+kind: APIManager
+metadata:
+  name: apimanager
+  labels:
+    app: apimanager
+  namespace: {{ three_scale_project }}
+spec:
+  system:
+    redisPersistentVolumeClaim:
+      storageClassName: {{ storage_class_3scale }}
+    database:
+      postgresql:
+        persistentVolumeClaim:
+          storageClassName: {{ storage_class_3scale }}
+    fileStorage:
+      persistentVolumeClaim:
+        storageClassName: {{ storage_class_3scale }}
+  backend:
+    redisPersistentVolumeClaim:
+      storageClassName: {{ storage_class_3scale }}
+  wildcardDomain: {{ wildcardDomain }} 

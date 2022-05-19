@@ -21,11 +21,18 @@
 - name: Verify if OCS is installed
   shell: oc get csv -n openshift-storage -o name | grep ocs-operator
   register: ocs_is_installed
+  ignore_errors: True
 
-# - name: Deploy OCS on Openshift
-#   shell: oc apply -f roles/ocs/templates/deploy-with-olm.yaml.j2
-#   ignore_errors: True
-#   when: ocs_is_installed != ""
+#- name: Deploy OCS on Openshift
+#  shell: oc apply -f roles/ocs/templates/deploy-with-olm.yaml.j2
+#  ignore_errors: True
+#  when: ocs_is_installed != ""
+
+- name: Deploy OCS OLM on Openshift
+  k8s:
+    state: present
+    resource_definition: "{{ lookup('template', 'deploy-with-olm.yaml.j2') }}"
+
 
 - name: Deploy OCS on Openshift
   k8s:
@@ -46,14 +53,6 @@
   k8s:
     state: present
     resource_definition: "{{ lookup('template', 'storagecluster.yaml.j2') }}"
-
-- name: GET
-  shell: "oc get storageclusters.ocs.openshift.io -n openshift-storage -o=custom-columns=.STATUS:status.phase --no-headers"
-  register: aaa
-
-- debug: 
-    var: aaa.stdout
-
 
 - name: Wait until the StorageCluster be created
   shell: "oc get storageclusters.ocs.openshift.io -n openshift-storage -o=custom-columns=.STATUS:status.phase --no-headers"
